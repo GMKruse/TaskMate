@@ -14,6 +14,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.taskmate.ui.theme.TaskMateTheme
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +40,9 @@ fun LoginScreen() {
     val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    val activity = context as? ComponentActivity
+    val userRepository = remember { UserRepository(context) }
 
     Column(
         modifier = Modifier
@@ -53,7 +58,7 @@ fun LoginScreen() {
         TextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") },
+            label = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -61,17 +66,48 @@ fun LoginScreen() {
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(24.dp))
+        val scope = rememberCoroutineScope()
         Button(
             onClick = {
-                context.startActivity(Intent(context, GroupOverviewActivity::class.java))
+                activity?.lifecycleScope?.launch {
+                    val result = userRepository.login(username, password)
+                    if (result.isSuccess) {
+                        showError = false
+                        context.startActivity(Intent(context, GroupOverviewActivity::class.java))
+                    } else {
+                        showError = true
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Login")
+        }
+        if (showError) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.error,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Login failed",
+                        color = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { showError = false }) {
+                        Text("Dismiss", color = MaterialTheme.colorScheme.onError)
+                    }
+                }
+            }
         }
     }
 }
