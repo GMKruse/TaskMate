@@ -1,10 +1,10 @@
 package com.example.taskmate.activities
 
-import GroupRepository
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,20 +28,20 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.taskmate.models.Group
 import com.example.taskmate.ui.theme.TaskMateTheme
-import com.example.taskmate.repositories.UserRepository
-import com.example.taskmate.models.Email
-import com.example.taskmate.models.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 class CreateGroupActivity : ComponentActivity() {
+    private val viewModel: CreateGroupViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             TaskMateTheme {
-                CreateGroupScreen(onBack = { finish() })
+                CreateGroupScreen(
+                    viewModel = viewModel,
+                    onBack = { finish() }
+                )
             }
         }
     }
@@ -49,21 +49,9 @@ class CreateGroupActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateGroupScreen(onBack: () -> Unit) {
-    var groupName by remember { mutableStateOf("") }
-    var emailInput by remember { mutableStateOf("") }
-    var memberEmails by remember { mutableStateOf(listOf<Email>()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var emailError by remember { mutableStateOf(false) }
+fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
+    val dataState by viewModel.dataState.collectAsState()
     val focusManager = LocalFocusManager.current
-    val groupRepository = remember { GroupRepository() }
-    val userRepository = remember { UserRepository() }
-    var currentUser by remember { mutableStateOf<User?>(null) }
-
-    // Fetch current user email and id once
-    LaunchedEffect(Unit) {
-        currentUser = userRepository.getCurrentUser()
-    }
 
     Scaffold(
         topBar = {
@@ -85,32 +73,15 @@ fun CreateGroupScreen(onBack: () -> Unit) {
             ) {
                 Button(
                     onClick = {
-                        if (currentUser == null) {
-                            isLoading = false
-                            return@Button
-                        }
-                        isLoading = true
-                        val filteredMembers = memberEmails.filter { it != currentUser!!.email }
-                        // Ensure current user email is in the members list
-                        val members = (filteredMembers + currentUser!!.email).distinct()
-                        val group = Group(
-                            name = groupName,
-                            createdBy = currentUser!!.id,
-                            members = members,
-                            createdAt = System.currentTimeMillis()
-                        )
-                        groupRepository.createGroup(group) { success, _ ->
-                            isLoading = false
-                            if (success) {
-                                onBack()
-                            }
+                        viewModel.createGroup { success ->
+                            if (success) onBack()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = !isLoading && groupName.isNotBlank() && currentUser != null
+                    enabled = !dataState.isLoading && dataState.groupName.isNotBlank() && dataState.currentUser != null
                 ) {
-                    if (isLoading) {
+                    if (dataState.isLoading) {
                         CircularProgressIndicator(
                             color = Color.White,
                             modifier = Modifier.size(24.dp),
@@ -131,8 +102,8 @@ fun CreateGroupScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.Top
         ) {
             OutlinedTextField(
-                value = groupName,
-                onValueChange = { groupName = it },
+                value = dataState.groupName,
+                onValueChange = { viewModel.onGroupNameChange(it) },
                 label = { Text("Group name") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -142,14 +113,14 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                 )
             )
             Spacer(modifier = Modifier.height(24.dp))
-            if (memberEmails.isNotEmpty()) {
+            if (dataState.memberEmails.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 120.dp)
                 ) {
-                    items(memberEmails) { email ->
-                        if (email != currentUser!!.email) {
+                    items(dataState.memberEmails) { email ->
+                        if (dataState.currentUser != null && email != dataState.currentUser!!.email) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -165,9 +136,7 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Remove",
                                     modifier = Modifier
-                                        .clickable {
-                                            memberEmails = memberEmails - email
-                                        }
+                                        .clickable { viewModel.removeEmail(email) }
                                         .padding(4.dp)
                                 )
                             }
@@ -178,11 +147,8 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
             OutlinedTextField(
-                value = emailInput,
-                onValueChange = {
-                    emailInput = it
-                    emailError = false
-                },
+                value = dataState.emailInput,
+                onValueChange = { viewModel.onEmailInputChange(it) },
                 label = { Text("Add member by email") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(
@@ -190,19 +156,12 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                     imeAction = ImeAction.Done
                 ),
                 singleLine = true,
-                isError = emailError,
+                isError = dataState.emailError,
                 trailingIcon = {
-                    if (emailInput.isNotBlank() && Email(emailInput) != currentUser!!.email) {
+                    if (dataState.emailInput.isNotBlank() && dataState.currentUser != null && com.example.taskmate.models.Email(dataState.emailInput) != dataState.currentUser!!.email) {
                         IconButton(onClick = {
-                            val emailObj = Email(emailInput)
-                            if (isValidEmail(emailInput) && emailObj !in memberEmails && emailObj != currentUser!!.email) {
-                                memberEmails = memberEmails + emailObj
-                                emailInput = ""
-                                emailError = false
-                                focusManager.clearFocus()
-                            } else {
-                                emailError = true
-                            }
+                            viewModel.addEmail()
+                            focusManager.clearFocus()
                         }) {
                             Icon(Icons.Default.Add, contentDescription = "Add email")
                         }
@@ -210,25 +169,12 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                 },
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        val emailObj = Email(emailInput)
-                        if (emailInput.isNotBlank() && emailObj != currentUser!!.email) {
-                            if (isValidEmail(emailInput) && emailObj !in memberEmails) {
-                                memberEmails = memberEmails + emailObj
-                                emailInput = ""
-                                emailError = false
-                                focusManager.clearFocus()
-                            } else {
-                                emailError = true
-                            }
-                        } else {
-                            emailInput = ""
-                            emailError = false
-                            focusManager.clearFocus()
-                        }
+                        viewModel.addEmail()
+                        focusManager.clearFocus()
                     }
                 )
             )
-            if (emailError) {
+            if (dataState.emailError) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
                     color = MaterialTheme.colorScheme.error,
@@ -246,7 +192,7 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(onClick = { emailError = false }) {
+                        TextButton(onClick = { viewModel.dismissEmailError() }) {
                             Text("Dismiss", color = MaterialTheme.colorScheme.onError)
                         }
                     }
@@ -254,9 +200,4 @@ fun CreateGroupScreen(onBack: () -> Unit) {
             }
         }
     }
-}
-
-// Helper function for email validation
-fun isValidEmail(email: String): Boolean {
-    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
