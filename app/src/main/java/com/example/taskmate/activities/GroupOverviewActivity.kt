@@ -79,7 +79,7 @@ class GroupOverviewActivity : ComponentActivity() {
                         contentAlignment = Alignment.TopCenter
                     ) {
                         GroupOverviewScreen(viewModel = viewModel)
-                        BackHandler(enabled = true) { /* Do nothing to disable back */ }
+                        BackHandler(enabled = false) { /* Do nothing to disable back */ }
                     }
                 }
             }
@@ -167,7 +167,7 @@ fun GreetingCard(userName: String) {
 }
 
 @Composable
-fun GroupList(groups: List<com.example.taskmate.models.Group>) {
+fun GroupList(groups: List<Group>) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -176,7 +176,10 @@ fun GroupList(groups: List<com.example.taskmate.models.Group>) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp, horizontal = 0.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                onClick = {
+                    // Navigate to group details using group.id
+                }
             ) {
                 Row(
                     modifier = Modifier
