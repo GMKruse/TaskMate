@@ -85,6 +85,10 @@ class GroupOverviewActivity : ComponentActivity() {
             }
         }
     }
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshGroups()
+    }
 }
 
 @Composable
@@ -212,7 +216,7 @@ fun GroupOverviewScreenEmptyPreview() {
     }
     class FakeGroupRepository : IGroupRepository {
         override fun createGroup(group: com.example.taskmate.models.Group, onComplete: (Boolean, String?) -> Unit) {}
-        override fun fetchGroupsForUser(userId: String, onResult: (List<com.example.taskmate.models.Group>) -> Unit) {
+        override fun fetchGroupsForUser(email: Email, onResult: (List<com.example.taskmate.models.Group>) -> Unit) {
             onResult(emptyList())
         }
     }
@@ -235,7 +239,7 @@ fun GroupOverviewScreenWithGroupsPreview() {
 
     class FakeGroupRepository : IGroupRepository {
         override fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit) {}
-        override fun fetchGroupsForUser(userId: String, onResult: (List<Group>) -> Unit) {
+        override fun fetchGroupsForUser(email: Email, onResult: (List<Group>) -> Unit) {
             onResult(
                 listOf(
                     Group(

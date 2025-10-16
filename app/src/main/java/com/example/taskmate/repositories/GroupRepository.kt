@@ -5,7 +5,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 interface IGroupRepository {
     fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit)
-    fun fetchGroupsForUser(userId: String, onResult: (List<Group>) -> Unit)
+    fun fetchGroupsForUser(email: Email, onResult: (List<Group>) -> Unit)
 }
 
 class GroupRepository() : IGroupRepository {
@@ -19,7 +19,7 @@ class GroupRepository() : IGroupRepository {
         val groupMap = hashMapOf(
             "id" to groupWithId.id,
             "name" to groupWithId.name,
-            "createdBy" to groupWithId.createdBy,
+            "createdBy" to groupWithId.createdBy.value,
             "members" to groupWithId.members.map { it.value },
             "createdAt" to groupWithId.createdAt
         )
@@ -28,8 +28,8 @@ class GroupRepository() : IGroupRepository {
             .addOnFailureListener { e -> onComplete(false, e.message) }
     }
 
-    override fun fetchGroupsForUser(userId: String, onResult: (List<Group>) -> Unit) {
-        groupsRef.whereArrayContains("members", userId)
+    override fun fetchGroupsForUser(email: Email, onResult: (List<Group>) -> Unit) {
+        groupsRef.whereArrayContains("members", email.value)
             .get()
             .addOnSuccessListener { snapshot ->
                 val groups = snapshot.documents.mapNotNull { doc ->

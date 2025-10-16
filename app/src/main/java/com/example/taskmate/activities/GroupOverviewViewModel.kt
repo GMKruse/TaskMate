@@ -3,6 +3,7 @@ package com.example.taskmate.activities
 import IGroupRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.taskmate.models.Email
 import com.example.taskmate.models.Group
 import com.example.taskmate.repositories.IUserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,10 +23,11 @@ class GroupOverviewViewModel(
         val error: String? = null
     )
 
-    private val userRepository = userRepository
-
     private val _viewState = MutableStateFlow(ViewState())
     val viewState: StateFlow<ViewState> = _viewState
+
+    private val userRepository = userRepository
+    private var lastUserId: String? = null
 
     init {
         fetchUser()
@@ -38,6 +40,7 @@ class GroupOverviewViewModel(
                 val user = userRepository.getCurrentUser()
                 _viewState.update { it.copy(userName = user?.name ?: "User") }
                 if (user != null) {
+                    lastUserId = user.id.value
                     fetchGroups(user.id.value)
                 } else {
                     _viewState.update { it.copy(isLoading = false) }
@@ -50,8 +53,16 @@ class GroupOverviewViewModel(
 
     private fun fetchGroups(userId: String) {
         _viewState.update { it.copy(isLoading = true) }
-        groupRepository.fetchGroupsForUser(userId) { groups ->
+        groupRepository.fetchGroupsForUser(Email(userId)) { groups ->
             _viewState.update { it.copy(groups = groups, isLoading = false) }
+        }
+    }
+
+    fun refreshGroups() {
+        if (lastUserId != null) {
+            fetchGroups(lastUserId!!)
+        } else {
+            fetchUser()
         }
     }
 
