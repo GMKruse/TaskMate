@@ -1,6 +1,5 @@
 package com.example.taskmate.activities
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,6 +26,8 @@ import com.example.taskmate.repositories.UserRepository
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.platform.LocalContext
+import com.example.taskmate.models.Email
+import com.example.taskmate.models.User
 import com.example.taskmate.models.UserId
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +35,7 @@ class GroupOverviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val userRepository: IUserRepository = UserRepository(this)
+        val userRepository: IUserRepository = UserRepository()
         setContent {
             TaskMateTheme {
                 Scaffold(
@@ -76,8 +77,8 @@ fun GroupOverviewScreen(userRepository: IUserRepository) {
     val context = LocalContext.current
     var userName by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        val name = userRepository.getCurrentUserName()
-        userName = name ?: "User"
+        val user = userRepository.getCurrentUser()
+        userName = user?.name ?: "User"
     }
     Column(
         modifier = Modifier
@@ -143,11 +144,8 @@ fun GreetingCard(userName: String) {
 @Composable
 fun GroupOverviewScreenPreview() {
     class FakeUserRepository : IUserRepository {
-        override suspend fun getCurrentUserName(): String? = "Preview User"
+        override suspend fun getCurrentUser(): User? = User(UserId("1"), email = Email("preview@mail.dk"), name = "Preview User")
         override fun logout() {}
-        override fun getCurrentUserId(): UserId? {
-            TODO("Not yet implemented")
-        }
     }
     TaskMateTheme {
         GroupOverviewScreen(userRepository = FakeUserRepository())

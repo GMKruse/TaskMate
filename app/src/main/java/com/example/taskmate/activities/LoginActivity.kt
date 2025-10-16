@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import com.example.taskmate.repositories.UserRepository
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.taskmate.models.Email
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,12 +48,12 @@ class LoginActivity : ComponentActivity() {
 @Composable
 fun LoginScreen() {
     val context = LocalContext.current
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(Email("")) }
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
     val activity = context as? ComponentActivity
-    val userRepository = remember { UserRepository(context) }
+    val userRepository = remember { UserRepository() }
 
     Column(
         modifier = Modifier
@@ -66,8 +67,8 @@ fun LoginScreen() {
             modifier = Modifier.padding(bottom = 32.dp)
         )
         TextField(
-            value = username,
-            onValueChange = { username = it },
+            value = email.value,
+            onValueChange = { email = Email(it) },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -97,8 +98,8 @@ fun LoginScreen() {
         val scope = rememberCoroutineScope()
         Button(
             onClick = {
-                activity?.lifecycleScope?.launch {
-                    val result = userRepository.login(username, password)
+                scope.launch {
+                    val result = userRepository.login(email, password)
                     if (result.isSuccess) {
                         showError = false
                         context.startActivity(Intent(context, GroupOverviewActivity::class.java))

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.taskmate.models.Email
 import com.example.taskmate.repositories.UserRepository
 import com.example.taskmate.ui.theme.TaskMateTheme
 import kotlinx.coroutines.launch
@@ -46,11 +47,11 @@ class RegisterActivity : ComponentActivity() {
 fun RegisterScreen() {
     val context = LocalContext.current
     var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(Email("")) }
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    val userRepository = remember { UserRepository(context) }
+    val userRepository = remember { UserRepository() }
     val scope = rememberCoroutineScope()
 
     Column(
@@ -74,8 +75,8 @@ fun RegisterScreen() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         TextField(
-            value = email,
-            onValueChange = { email = it },
+            value = email.value,
+            onValueChange = { email = Email(it) },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
