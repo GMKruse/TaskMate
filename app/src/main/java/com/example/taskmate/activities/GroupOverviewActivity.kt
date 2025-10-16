@@ -103,7 +103,7 @@ fun GroupOverviewScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        GreetingCard(viewState.userName)
+        GreetingCard(viewState.user?.name ?: "") // TODO: Handle null user case better
         Row(
             modifier = Modifier
                 .fillMaxWidth()
