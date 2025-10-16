@@ -1,6 +1,7 @@
 package com.example.taskmate.repositories
 
 import android.content.Context
+import com.example.taskmate.models.UserId
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -10,6 +11,7 @@ import kotlinx.coroutines.tasks.await
 interface IUserRepository {
     suspend fun getCurrentUserName(): String?
     fun logout()
+    fun getCurrentUserId(): UserId?
 }
 
 class UserRepository(private val context: Context) : IUserRepository {
@@ -45,7 +47,7 @@ class UserRepository(private val context: Context) : IUserRepository {
         }
     }
 
-    fun getCurrentUserId(): String? = auth.currentUser?.uid
+    override fun getCurrentUserId(): UserId? = auth.currentUser?.uid?.let { UserId(it) }
 
     override fun logout() {
         auth.signOut()
@@ -53,7 +55,7 @@ class UserRepository(private val context: Context) : IUserRepository {
 
     override suspend fun getCurrentUserName(): String? {
         val uid = getCurrentUserId() ?: return null
-        val doc = db.collection("users").document(uid).get().await()
+        val doc = db.collection("users").document(uid.value).get().await()
         return doc.getString("name")
     }
 }

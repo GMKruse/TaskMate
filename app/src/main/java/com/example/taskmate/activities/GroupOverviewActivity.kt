@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.example.taskmate.repositories.UserRepository
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.platform.LocalContext
+import com.example.taskmate.models.UserId
 
 @OptIn(ExperimentalMaterial3Api::class)
 class GroupOverviewActivity : ComponentActivity() {
@@ -71,6 +73,7 @@ class GroupOverviewActivity : ComponentActivity() {
 
 @Composable
 fun GroupOverviewScreen(userRepository: IUserRepository) {
+    val context = LocalContext.current
     var userName by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
         val name = userRepository.getCurrentUserName()
@@ -82,26 +85,7 @@ fun GroupOverviewScreen(userRepository: IUserRepository) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Hello $userName",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = "Motivational quote of the day: Just do it!",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal
-                )
-            }
-        }
+        GreetingCard(userName)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -114,7 +98,9 @@ fun GroupOverviewScreen(userRepository: IUserRepository) {
                 fontWeight = FontWeight.Medium
             )
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* TODO: Add group action */ }) {
+            IconButton(onClick = {
+                context.startActivity(Intent(context, CreateGroupActivity::class.java))
+            }) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add group"
@@ -129,12 +115,39 @@ fun GroupOverviewScreen(userRepository: IUserRepository) {
     }
 }
 
+@Composable
+fun GreetingCard(userName: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Hello $userName",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = "Motivational quote of the day: Just do it!",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun GroupOverviewScreenPreview() {
     class FakeUserRepository : IUserRepository {
         override suspend fun getCurrentUserName(): String? = "Preview User"
         override fun logout() {}
+        override fun getCurrentUserId(): UserId? {
+            TODO("Not yet implemented")
+        }
     }
     TaskMateTheme {
         GroupOverviewScreen(userRepository = FakeUserRepository())

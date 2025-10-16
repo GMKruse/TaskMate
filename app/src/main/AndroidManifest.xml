@@ -32,6 +32,7 @@
             android:exported="true"
             android:label="Register"
             android:theme="@style/Theme.TaskMate" />
+        <activity android:name=".activities.CreateGroupActivity" />
     </application>
 
 </manifest>
