@@ -7,7 +7,12 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
-class UserRepository(private val context: Context) {
+interface IUserRepository {
+    suspend fun getCurrentUserName(): String?
+    fun logout()
+}
+
+class UserRepository(private val context: Context) : IUserRepository {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
@@ -42,7 +47,13 @@ class UserRepository(private val context: Context) {
 
     fun getCurrentUserId(): String? = auth.currentUser?.uid
 
-    fun logout() {
+    override fun logout() {
         auth.signOut()
+    }
+
+    override suspend fun getCurrentUserName(): String? {
+        val uid = getCurrentUserId() ?: return null
+        val doc = db.collection("users").document(uid).get().await()
+        return doc.getString("name")
     }
 }
