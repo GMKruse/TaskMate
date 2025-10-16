@@ -53,6 +53,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("androidx.compose.material:material-icons-extended:1.6.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
