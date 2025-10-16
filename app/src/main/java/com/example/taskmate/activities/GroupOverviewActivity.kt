@@ -1,4 +1,4 @@
-package com.example.taskmate
+package com.example.taskmate.activities
 
 import android.content.Intent
 import android.os.Bundle
@@ -13,13 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.taskmate.ui.theme.TaskMateTheme
-import com.google.firebase.auth.FirebaseAuth
+import com.example.taskmate.repositories.UserRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 class GroupOverviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val userRepository = UserRepository(this)
         setContent {
             TaskMateTheme {
                 Scaffold(
@@ -30,7 +31,7 @@ class GroupOverviewActivity : ComponentActivity() {
                             actions = {
                                 val context = this@GroupOverviewActivity
                                 TextButton(onClick = {
-                                    FirebaseAuth.getInstance().signOut()
+                                    userRepository.logout()
                                     val intent = Intent(context, LoginActivity::class.java)
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)

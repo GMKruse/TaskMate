@@ -1,4 +1,4 @@
-package com.example.taskmate
+package com.example.taskmate.activities
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,33 +6,35 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.taskmate.repositories.UserRepository
 import com.example.taskmate.ui.theme.TaskMateTheme
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.ui.text.input.VisualTransformation
 
-class LoginActivity : ComponentActivity() {
+class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             TaskMateTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)) {
-                        LoginScreen()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        RegisterScreen()
                     }
                 }
             }
@@ -41,31 +43,43 @@ class LoginActivity : ComponentActivity() {
 }
 
 @Composable
-fun LoginScreen() {
+fun RegisterScreen() {
     val context = LocalContext.current
-    var username by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
-    var passwordVisible by remember { mutableStateOf(false) }
-    val activity = context as? ComponentActivity
+    var errorMessage by remember { mutableStateOf("") }
     val userRepository = remember { UserRepository(context) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(32.dp),
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Login",
+            text = "Register",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 32.dp)
         )
         TextField(
-            value = username,
-            onValueChange = { username = it },
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name (optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        TextField(
+            value = email,
+            onValueChange = { email = it },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
         )
         Spacer(modifier = Modifier.height(16.dp))
         TextField(
@@ -73,32 +87,37 @@ fun LoginScreen() {
             onValueChange = { password = it },
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
-                val description = if (passwordVisible) "Hide password" else "Show password"
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = description)
-                }
-            }
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
         )
         Spacer(modifier = Modifier.height(24.dp))
-        val scope = rememberCoroutineScope()
         Button(
             onClick = {
-                activity?.lifecycleScope?.launch {
-                    val result = userRepository.login(username, password)
+                scope.launch {
+                    val result = userRepository.register(name, email, password)
                     if (result.isSuccess) {
                         showError = false
-                        context.startActivity(Intent(context, GroupOverviewActivity::class.java))
+                        val intent = Intent(context, LoginActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
                     } else {
                         showError = true
+                        errorMessage = result.exceptionOrNull()?.localizedMessage ?: "Registration failed"
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Login")
+            Text("Register")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(onClick = {
+            val intent = Intent(context, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            context.startActivity(intent)
+        }) {
+            Text("Back to Login")
         }
         if (showError) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -109,11 +128,10 @@ fun LoginScreen() {
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Login failed",
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.weight(1f)
                     )
@@ -129,8 +147,8 @@ fun LoginScreen() {
 
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview() {
+fun RegisterScreenPreview() {
     TaskMateTheme {
-        LoginScreen()
+        RegisterScreen()
     }
 }
