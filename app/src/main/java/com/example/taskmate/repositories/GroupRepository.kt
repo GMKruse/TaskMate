@@ -3,14 +3,19 @@ import com.example.taskmate.models.Group
 import com.example.taskmate.models.UserId
 import com.google.firebase.firestore.FirebaseFirestore
 
-class GroupRepository() {
+interface IGroupRepository {
+    fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit)
+    fun fetchGroupsForUser(userId: String, onResult: (List<Group>) -> Unit)
+}
+
+class GroupRepository() : IGroupRepository {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val groupsRef = db.collection("groups")
 
-    fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit) {
+    override fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit) {
         val groupDoc = if (group.id.isNotBlank()) groupsRef.document(group.id) else groupsRef.document()
         val groupWithId = group.copy(id = groupDoc.id)
-        // Convert Email objects to their string values for Firestore
+
         val groupMap = hashMapOf(
             "id" to groupWithId.id,
             "name" to groupWithId.name,
@@ -23,7 +28,7 @@ class GroupRepository() {
             .addOnFailureListener { e -> onComplete(false, e.message) }
     }
 
-    fun fetchGroupsForUser(userId: String, onResult: (List<Group>) -> Unit) {
+    override fun fetchGroupsForUser(userId: String, onResult: (List<Group>) -> Unit) {
         groupsRef.whereArrayContains("members", userId)
             .get()
             .addOnSuccessListener { snapshot ->
