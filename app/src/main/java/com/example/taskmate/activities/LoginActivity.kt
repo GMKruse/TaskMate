@@ -16,7 +16,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.taskmate.ui.theme.TaskMateTheme
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -26,6 +25,17 @@ import com.example.taskmate.repositories.UserRepository
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.taskmate.models.Email
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material3.CircularProgressIndicator
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,8 +62,25 @@ fun LoginScreen() {
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
-    val activity = context as? ComponentActivity
+    var loading by remember { mutableStateOf(false) }
     val userRepository = remember { UserRepository() }
+    val scope = rememberCoroutineScope()
+
+    fun performLogin() {
+        if (!loading) {
+            loading = true
+            scope.launch {
+                val result = userRepository.login(email, password)
+                loading = false
+                if (result.isSuccess) {
+                    showError = false
+                    context.startActivity(Intent(context, GroupOverviewActivity::class.java))
+                } else {
+                    showError = true
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -92,25 +119,26 @@ fun LoginScreen() {
                 }
             },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = { performLogin() }
+            )
         )
         Spacer(modifier = Modifier.height(24.dp))
-        val scope = rememberCoroutineScope()
         Button(
-            onClick = {
-                scope.launch {
-                    val result = userRepository.login(email, password)
-                    if (result.isSuccess) {
-                        showError = false
-                        context.startActivity(Intent(context, GroupOverviewActivity::class.java))
-                    } else {
-                        showError = true
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+            onClick = { performLogin() },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !loading
         ) {
-            Text("Login")
+            if (loading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Login")
+            }
         }
         if (showError) {
             Spacer(modifier = Modifier.height(16.dp))

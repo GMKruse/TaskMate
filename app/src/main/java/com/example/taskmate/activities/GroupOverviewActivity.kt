@@ -6,36 +6,34 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.sp
-import com.example.taskmate.ui.theme.TaskMateTheme
-import com.example.taskmate.repositories.IUserRepository
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.example.taskmate.repositories.UserRepository
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.taskmate.models.Email
 import com.example.taskmate.models.User
 import com.example.taskmate.models.UserId
+import com.example.taskmate.repositories.IUserRepository
+import com.example.taskmate.repositories.UserRepository
+import com.example.taskmate.ui.theme.TaskMateTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 class GroupOverviewActivity : ComponentActivity() {
+    private val viewModel: GroupOverviewViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val userRepository: IUserRepository = UserRepository()
         setContent {
             TaskMateTheme {
                 Scaffold(
@@ -46,7 +44,8 @@ class GroupOverviewActivity : ComponentActivity() {
                             actions = {
                                 val context = this@GroupOverviewActivity
                                 TextButton(onClick = {
-                                    userRepository.logout()
+                                    // You may want to move logout logic to the ViewModel for consistency
+                                    UserRepository().logout()
                                     val intent = Intent(context, LoginActivity::class.java)
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
@@ -63,7 +62,7 @@ class GroupOverviewActivity : ComponentActivity() {
                             .padding(innerPadding),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        GroupOverviewScreen(userRepository)
+                        GroupOverviewScreen(viewModel = viewModel)
                         BackHandler(enabled = true) { /* Do nothing to disable back */ }
                     }
                 }
@@ -73,20 +72,16 @@ class GroupOverviewActivity : ComponentActivity() {
 }
 
 @Composable
-fun GroupOverviewScreen(userRepository: IUserRepository) {
+fun GroupOverviewScreen(viewModel: GroupOverviewViewModel) {
+    val viewState by viewModel.viewState.collectAsState()
     val context = LocalContext.current
-    var userName by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
-        val user = userRepository.getCurrentUser()
-        userName = user?.name ?: "User"
-    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        GreetingCard(userName)
+        GreetingCard(viewState.userName)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,10 +104,25 @@ fun GroupOverviewScreen(userRepository: IUserRepository) {
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "No groups yet.",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        if (viewState.isLoading) {
+            CircularProgressIndicator()
+        } else if (viewState.error != null) {
+            Text(
+                text = viewState.error!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            TextButton(onClick = { viewModel.clearError() }) {
+                Text("Dismiss", color = MaterialTheme.colorScheme.error)
+            }
+        } else if (viewState.groups.isEmpty()) {
+            Text(
+                text = "No groups yet.",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        } else {
+            // TODO: Render groups list
+        }
     }
 }
 
@@ -148,6 +158,6 @@ fun GroupOverviewScreenPreview() {
         override fun logout() {}
     }
     TaskMateTheme {
-        GroupOverviewScreen(userRepository = FakeUserRepository())
+        GroupOverviewScreen(viewModel = GroupOverviewViewModel(FakeUserRepository()))
     }
 }

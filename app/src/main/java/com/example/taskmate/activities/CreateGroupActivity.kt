@@ -50,7 +50,7 @@ class CreateGroupActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
-    val dataState by viewModel.dataState.collectAsState()
+    val viewState by viewModel.viewState.collectAsState()
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -79,9 +79,9 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = !dataState.isLoading && dataState.groupName.isNotBlank() && dataState.currentUser != null
+                    enabled = !viewState.isLoading && viewState.groupName.isNotBlank() && viewState.currentUser != null
                 ) {
-                    if (dataState.isLoading) {
+                    if (viewState.isLoading) {
                         CircularProgressIndicator(
                             color = Color.White,
                             modifier = Modifier.size(24.dp),
@@ -102,7 +102,7 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
             verticalArrangement = Arrangement.Top
         ) {
             OutlinedTextField(
-                value = dataState.groupName,
+                value = viewState.groupName,
                 onValueChange = { viewModel.onGroupNameChange(it) },
                 label = { Text("Group name") },
                 modifier = Modifier.fillMaxWidth(),
@@ -113,14 +113,14 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                 )
             )
             Spacer(modifier = Modifier.height(24.dp))
-            if (dataState.memberEmails.isNotEmpty()) {
+            if (viewState.memberEmails.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 120.dp)
                 ) {
-                    items(dataState.memberEmails) { email ->
-                        if (dataState.currentUser != null && email != dataState.currentUser!!.email) {
+                    items(viewState.memberEmails) { email ->
+                        if (viewState.currentUser != null && email != viewState.currentUser!!.email) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -147,7 +147,7 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
             OutlinedTextField(
-                value = dataState.emailInput,
+                value = viewState.emailInput,
                 onValueChange = { viewModel.onEmailInputChange(it) },
                 label = { Text("Add member by email") },
                 modifier = Modifier.fillMaxWidth(),
@@ -156,9 +156,9 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                     imeAction = ImeAction.Done
                 ),
                 singleLine = true,
-                isError = dataState.emailError,
+                isError = viewState.emailError,
                 trailingIcon = {
-                    if (dataState.emailInput.isNotBlank() && dataState.currentUser != null && com.example.taskmate.models.Email(dataState.emailInput) != dataState.currentUser!!.email) {
+                    if (viewState.emailInput.isNotBlank() && viewState.currentUser != null && com.example.taskmate.models.Email(viewState.emailInput) != viewState.currentUser!!.email) {
                         IconButton(onClick = {
                             viewModel.addEmail()
                             focusManager.clearFocus()
@@ -174,7 +174,7 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                     }
                 )
             )
-            if (dataState.emailError) {
+            if (viewState.emailError) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
                     color = MaterialTheme.colorScheme.error,
