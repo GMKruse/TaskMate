@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,6 +30,7 @@ import com.example.taskmate.models.Email
 import com.example.taskmate.models.Group
 import com.example.taskmate.models.User
 import com.example.taskmate.models.UserId
+import com.example.taskmate.models.ViewState
 import com.example.taskmate.repositories.IUserRepository
 import com.example.taskmate.repositories.UserRepository
 import com.example.taskmate.ui.theme.TaskMateTheme
@@ -97,51 +97,70 @@ fun GroupOverviewScreen(
 ) {
     val viewState by viewModel.viewState.collectAsState()
     val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        GreetingCard(viewState.user?.name ?: "") // TODO: Handle null user case better
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Your groups",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = {
-                context.startActivity(Intent(context, CreateGroupActivity::class.java))
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add group"
+        when (val s = viewState) {
+            is ViewState.Loading -> {
+                // show placeholder greeting and loader
+                GreetingCard("")
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator()
+            }
+
+            is ViewState.Error -> {
+                val message = s.error
+                // show an empty greeting and the error message
+                GreetingCard("")
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
-        }
-        if (viewState.isLoading) {
-            CircularProgressIndicator()
-        } else if (viewState.error != null) {
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = viewState.error!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        } else if (viewState.groups.isEmpty()) {
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = "No groups yet.",
-                style = MaterialTheme.typography.headlineMedium
-            )
-        } else {
-            GroupList(groups = viewState.groups)
+
+            is ViewState.Data -> {
+                val data = s.data
+
+                GreetingCard(data.user.name)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Your groups",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = {
+                        context.startActivity(Intent(context, CreateGroupActivity::class.java))
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add group"
+                        )
+                    }
+                }
+
+                if (data.groups.isEmpty()) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "No groups yet.",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                } else {
+                    GroupList(groups = data.groups)
+                }
+            }
         }
     }
 }
@@ -215,8 +234,8 @@ fun GroupOverviewScreenEmptyPreview() {
         override fun logout() {}
     }
     class FakeGroupRepository : IGroupRepository {
-        override fun createGroup(group: com.example.taskmate.models.Group, onComplete: (Boolean, String?) -> Unit) {}
-        override fun fetchGroupsForUser(email: Email, onResult: (List<com.example.taskmate.models.Group>) -> Unit) {
+        override fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit) {}
+        override fun fetchGroupsForUser(email: Email, onResult: (List<Group>) -> Unit) {
             onResult(emptyList())
         }
     }
