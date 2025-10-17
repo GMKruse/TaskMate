@@ -28,7 +28,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.taskmate.models.Email
 import com.example.taskmate.ui.theme.TaskMateTheme
+import com.example.taskmate.models.ViewState
 
 @OptIn(ExperimentalMaterial3Api::class)
 class CreateGroupActivity : ComponentActivity() {
@@ -51,7 +53,18 @@ class CreateGroupActivity : ComponentActivity() {
 @Composable
 fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
     val viewState by viewModel.viewState.collectAsState()
+    val groupName by viewModel.groupName.collectAsState()
+    val emailInput by viewModel.emailInput.collectAsState()
+    val memberEmails by viewModel.memberEmails.collectAsState()
+    val emailError by viewModel.emailError.collectAsState()
+    val creating by viewModel.creatingGroup.collectAsState()
     val focusManager = LocalFocusManager.current
+
+    // derive values from sealed viewState
+    val currentUserEmail: Email? = when (val s = viewState) {
+        is ViewState.Data -> s.data.currentUser.email
+        else -> null
+    }
 
     Scaffold(
         topBar = {
@@ -73,15 +86,13 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
             ) {
                 Button(
                     onClick = {
-                        viewModel.createGroup { success ->
-                            if (success) onBack()
-                        }
+                        currentUserEmail?.let { viewModel.createGroup(it) { success -> if (success) onBack() } }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = !viewState.isLoading && viewState.groupName.isNotBlank() && viewState.currentUser != null
+                    enabled = !creating && groupName.isNotBlank() && currentUserEmail != null
                 ) {
-                    if (viewState.isLoading) {
+                    if (creating) {
                         CircularProgressIndicator(
                             color = Color.White,
                             modifier = Modifier.size(24.dp),
@@ -101,26 +112,58 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
+            // Operation-level loading bar or error banner
+            when (viewState) {
+                is ViewState.Loading -> {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                is ViewState.Error -> {
+                    val msg = (viewState as ViewState.Error).error
+                    Surface(
+                        color = MaterialTheme.colorScheme.error,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = msg, color = MaterialTheme.colorScheme.onError, modifier = Modifier.weight(1f))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(onClick = { /* TODO: FIX THIS */ }) {
+                                Text(text = "Dismiss", color = MaterialTheme.colorScheme.onError)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                else -> { /* no op */ }
+            }
+
             OutlinedTextField(
-                value = viewState.groupName,
-                onValueChange = { viewModel.onGroupNameChange(it) },
+                value = groupName,
+                onValueChange = { if (!creating) viewModel.onGroupNameChange(it) },
                 label = { Text("Group name") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !creating,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 )
             )
             Spacer(modifier = Modifier.height(24.dp))
-            if (viewState.memberEmails.isNotEmpty()) {
+
+            if (memberEmails.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 120.dp)
                 ) {
-                    items(viewState.memberEmails) { email ->
-                        if (viewState.currentUser != null && email != viewState.currentUser!!.email) {
+                    items(memberEmails) { email ->
+                        val cu = currentUserEmail
+                        if (cu == null || email != cu) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -136,7 +179,7 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Remove",
                                     modifier = Modifier
-                                        .clickable { viewModel.removeEmail(email) }
+                                        .clickable { if (!creating) viewModel.removeEmail(email) }
                                         .padding(4.dp)
                                 )
                             }
@@ -146,9 +189,10 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+
             OutlinedTextField(
-                value = viewState.emailInput,
-                onValueChange = { viewModel.onEmailInputChange(it) },
+                value = emailInput,
+                onValueChange = { if (!creating) viewModel.onEmailInputChange(it) },
                 label = { Text("Add member by email") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(
@@ -156,11 +200,13 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                     imeAction = ImeAction.Done
                 ),
                 singleLine = true,
-                isError = viewState.emailError,
+                isError = emailError != null,
+                enabled = !creating,
                 trailingIcon = {
-                    if (viewState.emailInput.isNotBlank() && viewState.currentUser != null && com.example.taskmate.models.Email(viewState.emailInput) != viewState.currentUser!!.email) {
+                    val cu = currentUserEmail
+                    if (!creating && emailInput.isNotBlank() && cu != null && Email(emailInput) != cu) {
                         IconButton(onClick = {
-                            viewModel.addEmail()
+                            viewModel.addEmail(cu)
                             focusManager.clearFocus()
                         }) {
                             Icon(Icons.Default.Add, contentDescription = "Add email")
@@ -169,12 +215,13 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                 },
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        viewModel.addEmail()
+                        if (!creating) currentUserEmail?.let { viewModel.addEmail(it) }
                         focusManager.clearFocus()
                     }
                 )
             )
-            if (viewState.emailError) {
+
+            if (emailError != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
                     color = MaterialTheme.colorScheme.error,
@@ -187,7 +234,7 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Invalid email",
+                            text = emailError ?: "Invalid email",
                             color = MaterialTheme.colorScheme.onError,
                             modifier = Modifier.weight(1f)
                         )
