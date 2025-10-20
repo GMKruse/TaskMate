@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.taskmate.ui.createGroup.CreateGroupViewModel
 import com.example.taskmate.ui.groupOverview.GroupOverviewViewModel
-import com.example.taskmate.managers.IUserManager
+import com.example.taskmate.managers.userManager.IUserManager
 import com.example.taskmate.repositories.UserRepository
 import com.example.taskmate.ui.groupOverview.GroupOverviewScreen
 import com.example.taskmate.ui.createGroup.CreateGroupScreen

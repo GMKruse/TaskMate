@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.taskmate.gate.LoginGate
-import com.example.taskmate.managers.UserManager
+import com.example.taskmate.managers.userManager.UserManager
 import com.example.taskmate.ui.theme.TaskMateTheme
 
 class MainActivity : ComponentActivity() {

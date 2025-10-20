@@ -1,4 +1,4 @@
-package com.example.taskmate.managers
+package com.example.taskmate.managers.userManager
 
 import com.example.taskmate.models.User
 import kotlinx.coroutines.flow.StateFlow

@@ -1,6 +1,5 @@
-package com.example.taskmate.managers
+package com.example.taskmate.managers.userManager
 
-import com.example.taskmate.models.User
 import com.example.taskmate.models.Email
 import com.example.taskmate.repositories.UserRepository
 import kotlinx.coroutines.Dispatchers

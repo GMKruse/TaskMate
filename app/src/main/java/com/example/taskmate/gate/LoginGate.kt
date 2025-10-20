@@ -5,8 +5,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.taskmate.ui.LoadingScreen
-import com.example.taskmate.managers.IUserManager
-import com.example.taskmate.managers.UserManagerState
+import com.example.taskmate.managers.userManager.IUserManager
+import com.example.taskmate.managers.userManager.UserManagerState
 import com.example.taskmate.navigation.AuthNavHost
 import com.example.taskmate.navigation.AppNavHost
 

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.taskmate.managers.IUserManager
+import com.example.taskmate.managers.userManager.IUserManager
 import com.example.taskmate.ui.LoginScreen
 import com.example.taskmate.ui.RegisterScreen
 import kotlinx.coroutines.CoroutineScope
