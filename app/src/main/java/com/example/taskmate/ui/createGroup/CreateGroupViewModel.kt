@@ -1,13 +1,14 @@
-package com.example.taskmate.activities
+package com.example.taskmate.ui.createGroup
 
+import GroupRepository
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.taskmate.models.Group
 import com.example.taskmate.models.Email
+import com.example.taskmate.models.Group
 import com.example.taskmate.models.User
-import com.example.taskmate.repositories.UserRepository
-import GroupRepository
 import com.example.taskmate.models.ViewState
+import com.example.taskmate.repositories.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -146,6 +147,6 @@ class CreateGroupViewModel : ViewModel() {
     }
 
     private fun isValidEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
 }

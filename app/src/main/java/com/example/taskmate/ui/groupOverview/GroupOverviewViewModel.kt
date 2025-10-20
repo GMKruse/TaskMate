@@ -1,4 +1,4 @@
-package com.example.taskmate.activities
+package com.example.taskmate.ui.groupOverview
 
 import IGroupRepository
 import androidx.lifecycle.ViewModel

@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
 class UserManager private constructor() : IUserManager {
@@ -23,24 +24,57 @@ class UserManager private constructor() : IUserManager {
     }
 
     override suspend fun login(email: String, password: String) {
-        _state.value = UserManagerState.Loading
-        withContext(Dispatchers.IO) {
-            val result = userRepository.login(Email(email), password)
+        _state.update { UserManagerState.Loading }
+
+        try {
+            val result = withContext(Dispatchers.IO) {
+                userRepository.login(Email(email), password)
+            }
+
             if (result.isSuccess) {
-                val user = userRepository.getCurrentUser()
+                val user = withContext(Dispatchers.IO) {
+                    userRepository.getCurrentUser()
+                }
                 if (user != null) {
-                    _state.value = UserManagerState.LoggedIn(user)
+                    _state.update { UserManagerState.LoggedIn(user) }
                 } else {
-                    _state.value = UserManagerState.LoggedOut(error = "Failed to fetch user data")
+                    _state.update { UserManagerState.LoggedOut(error = "Failed to fetch user data") }
                 }
             } else {
-                _state.value = UserManagerState.LoggedOut(error = result.exceptionOrNull()?.message ?: "Login failed")
+                _state.update { UserManagerState.LoggedOut(error = "Login failed") }
             }
+        } catch (e: Exception) {
+            _state.update { UserManagerState.LoggedOut(error = "An unexpected error occurred") }
+        }
+    }
+
+    override suspend fun register(name: String, email: String, password: String) {
+        _state.update { UserManagerState.Loading }
+
+        try {
+            val result = withContext(Dispatchers.IO) {
+                userRepository.register(name, Email(email), password)
+            }
+
+            if (result.isSuccess) {
+                val user = withContext(Dispatchers.IO) {
+                    userRepository.getCurrentUser()
+                }
+                if (user != null) {
+                    _state.update { UserManagerState.LoggedIn(user) }
+                } else {
+                    _state.update { UserManagerState.LoggedOut(error = "Failed to fetch user data") }
+                }
+            } else {
+                _state.update { UserManagerState.LoggedOut(error = result.exceptionOrNull()?.message ?: "Registration failed") }
+            }
+        } catch (e: Exception) {
+            _state.update { UserManagerState.LoggedOut(error = e.message ?: "An unexpected error occurred") }
         }
     }
 
     override fun logout() {
         userRepository.logout()
-        _state.value = UserManagerState.LoggedOut()
+        _state.update { UserManagerState.LoggedOut() }
     }
 }

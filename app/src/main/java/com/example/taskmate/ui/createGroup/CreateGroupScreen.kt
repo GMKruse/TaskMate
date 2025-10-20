@@ -1,10 +1,5 @@
-package com.example.taskmate.activities
+package com.example.taskmate.ui.createGroup
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -28,31 +22,17 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.taskmate.models.Email
-import com.example.taskmate.ui.theme.TaskMateTheme
-import com.example.taskmate.models.ViewState
 import com.example.taskmate.ui.createGroup.CreateGroupViewModel
-
-@OptIn(ExperimentalMaterial3Api::class)
-class CreateGroupActivity : ComponentActivity() {
-    private val viewModel: CreateGroupViewModel by viewModels()
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            TaskMateTheme {
-                CreateGroupScreen(
-                    viewModel = viewModel,
-                    onBack = { finish() }
-                )
-            }
-        }
-    }
-}
+import com.example.taskmate.models.Email
+import com.example.taskmate.models.ViewState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
+fun CreateGroupScreen(
+    viewModel: CreateGroupViewModel,
+    onBack: () -> Unit,
+    onGroupCreated: () -> Unit
+) {
     val viewState by viewModel.viewState.collectAsState()
     val groupName by viewModel.groupName.collectAsState()
     val emailInput by viewModel.emailInput.collectAsState()
@@ -67,49 +47,14 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
         else -> null
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("New group") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Button(
-                    onClick = {
-                        currentUserEmail?.let { viewModel.createGroup(it) { success -> if (success) onBack() } }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = !creating && groupName.isNotBlank() && currentUserEmail != null
-                ) {
-                    if (creating) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Create group", fontSize = 18.sp)
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .fillMaxWidth()
+                .weight(1f)
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
@@ -132,7 +77,7 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                         ) {
                             Text(text = msg, color = MaterialTheme.colorScheme.onError, modifier = Modifier.weight(1f))
                             Spacer(modifier = Modifier.width(8.dp))
-                            TextButton(onClick = { /* TODO: FIX THIS */ }) {
+                            TextButton(onClick = onBack) {
                                 Text(text = "Dismiss", color = MaterialTheme.colorScheme.onError)
                             }
                         }
@@ -244,6 +189,37 @@ fun CreateGroupScreen(viewModel: CreateGroupViewModel, onBack: () -> Unit) {
                             Text("Dismiss", color = MaterialTheme.colorScheme.onError)
                         }
                     }
+                }
+            }
+        }
+
+        // Bottom button section
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Button(
+                onClick = {
+                    currentUserEmail?.let {
+                        viewModel.createGroup(it) { success ->
+                            if (success) onGroupCreated()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !creating && groupName.isNotBlank() && currentUserEmail != null
+            ) {
+                if (creating) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Create group", fontSize = 18.sp)
                 }
             }
         }

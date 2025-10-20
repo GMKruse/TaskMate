@@ -1,58 +1,42 @@
-package com.example.taskmate.activities
+package com.example.taskmate.ui
 
-import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.taskmate.models.Email
-import com.example.taskmate.repositories.UserRepository
-import com.example.taskmate.ui.theme.TaskMateTheme
-import kotlinx.coroutines.launch
-
-class RegisterActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            TaskMateTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        RegisterScreen()
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
-fun RegisterScreen() {
-    val context = LocalContext.current
+fun RegisterScreen(
+    error: String? = null,
+    onRegister: (String, String, String) -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf(Email("")) }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    val userRepository = remember { UserRepository() }
-    val scope = rememberCoroutineScope()
+
+    // Update error display when error prop changes
+    LaunchedEffect(error) {
+        if (error != null) {
+            showError = true
+            errorMessage = error
+        }
+    }
+
+    fun performRegister() {
+        if (email.isNotBlank() && password.isNotBlank()) {
+            showError = false
+            onRegister(name, email, password)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -75,8 +59,8 @@ fun RegisterScreen() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         TextField(
-            value = email.value,
-            onValueChange = { email = Email(it) },
+            value = email,
+            onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -94,30 +78,13 @@ fun RegisterScreen() {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = {
-                scope.launch {
-                    val result = userRepository.register(name, email, password)
-                    if (result.isSuccess) {
-                        showError = false
-                        val intent = Intent(context, LoginActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        context.startActivity(intent)
-                    } else {
-                        showError = true
-                        errorMessage = result.exceptionOrNull()?.localizedMessage ?: "Registration failed"
-                    }
-                }
-            },
+            onClick = { performRegister() },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Register")
         }
         Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = {
-            val intent = Intent(context, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            context.startActivity(intent)
-        }) {
+        TextButton(onClick = onNavigateToLogin) {
             Text("Back to Login")
         }
         if (showError) {
@@ -132,7 +99,7 @@ fun RegisterScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = errorMessage,
+                        text = if (errorMessage.isNotBlank()) errorMessage else "Registration failed",
                         color = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.weight(1f)
                     )
@@ -146,10 +113,3 @@ fun RegisterScreen() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    TaskMateTheme {
-        RegisterScreen()
-    }
-}
