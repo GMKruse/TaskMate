@@ -1,11 +1,12 @@
-package com.example.taskmate.activities
+package com.example.taskmate
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.taskmate.gate.LoginGate
 import com.example.taskmate.managers.UserManager
@@ -16,12 +17,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val userManager = UserManager.getInstance()
+        val userManager = UserManager.Companion.getInstance()
 
         setContent {
             TaskMateTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.Companion.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LoginGate(userManager = userManager)
@@ -30,4 +31,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
