@@ -114,16 +114,21 @@ fun CreateGroupScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(
-                                        color = Color(0xFFF0F0F0),
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                     .padding(horizontal = 8.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(email.value, modifier = Modifier.weight(1f))
+                                Text(
+                                    text = email.value,
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Remove",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier
                                         .clickable { if (!creating) viewModel.removeEmail(email) }
                                         .padding(4.dp)
