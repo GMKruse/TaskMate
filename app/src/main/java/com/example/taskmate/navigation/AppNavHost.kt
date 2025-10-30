@@ -16,10 +16,14 @@ import com.example.taskmate.managers.userManager.IUserManager
 import com.example.taskmate.repositories.UserRepository
 import com.example.taskmate.ui.groupOverview.GroupOverviewScreen
 import com.example.taskmate.ui.createGroup.CreateGroupScreen
+import com.example.taskmate.ui.taskOverview.TaskOverview // <- import for your TaskOverview
 
 sealed class AppRoute(val route: String) {
     object GroupOverview : AppRoute("group_overview")
     object CreateGroup : AppRoute("create_group")
+    object TaskOverview : AppRoute("task_overview/{groupId}") {
+        fun createRoute(groupId: String) = "task_overview/$groupId"
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +47,7 @@ fun AppNavHost(userManager: IUserManager) {
                 navController = navController,
                 startDestination = AppRoute.GroupOverview.route
             ) {
+                // Group overview
                 composable(AppRoute.GroupOverview.route) {
                     val viewModel: GroupOverviewViewModel = viewModel(
                         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -75,11 +80,12 @@ fun AppNavHost(userManager: IUserManager) {
                             navController.navigate(AppRoute.CreateGroup.route)
                         },
                         onNavigateToGroupDetails = { groupId: String ->
-                            // TODO: Navigate to group details screen
+                            navController.navigate(AppRoute.TaskOverview.createRoute(groupId))
                         }
                     )
                 }
 
+                // Create group
                 composable(AppRoute.CreateGroup.route) {
                     val viewModel: CreateGroupViewModel = viewModel()
 
@@ -99,6 +105,28 @@ fun AppNavHost(userManager: IUserManager) {
                         },
                         onGroupCreated = {
                             navController.popBackStack()
+                        }
+                    )
+                }
+
+                // Task overview (moved outside CreateGroup composable)
+                composable(AppRoute.TaskOverview.route) { backStackEntry ->
+                    val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+
+                    // Set TopBar for this screen
+                    LaunchedEffect(Unit) {
+                        topBarConfig = TopBarConfig(
+                            title = "Group Tasks",
+                            showNavigationIcon = true,
+                            onNavigationClick = { navController.popBackStack() }
+                        )
+                    }
+
+                    TaskOverview(
+                        groupId = groupId,
+                        onTaskClick = { task ->
+                            // Navigation to task details kommer senere, fx:
+                            // navController.navigate("task_details/${task.id}")
                         }
                     )
                 }
