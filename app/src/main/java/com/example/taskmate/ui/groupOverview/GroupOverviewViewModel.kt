@@ -25,6 +25,8 @@ class GroupOverviewViewModel(
     private val _viewState = MutableStateFlow<ViewState<DataState, String>>(ViewState.Loading)
     val viewState: StateFlow<ViewState<DataState, String>> = _viewState
 
+    private var stopGroupsListener: (() -> Unit)? = null
+
     init {
         fetchUser()
     }
@@ -35,8 +37,7 @@ class GroupOverviewViewModel(
             try {
                 val user = userRepository.getCurrentUser()
                 if (user != null) {
-                    // fetch groups and emit Success once we have them
-                    fetchGroups(user)
+                    startGroupsListener(user)
                 } else {
                     _viewState.update { ViewState.Error("No user logged in") }
                 }
@@ -46,9 +47,14 @@ class GroupOverviewViewModel(
         }
     }
 
-    private fun fetchGroups(user: User) {
+    private fun startGroupsListener(user: User) {
+        // Stop existing listener if any
+        stopGroupsListener?.invoke()
+
         _viewState.update { ViewState.Loading }
-        groupRepository.fetchGroupsForUser(user.email) { groups ->
+
+        // Start new real-time listener
+        stopGroupsListener = groupRepository.listenToGroupsForUser(user.email) { groups ->
             _viewState.update { ViewState.Data(DataState(user = user, groups = groups)) }
         }
     }
@@ -57,9 +63,14 @@ class GroupOverviewViewModel(
         when (val s = _viewState.value) {
             is ViewState.Data -> {
                 val data = s.data
-                fetchGroups(data.user)
+                startGroupsListener(data.user)
             }
             else -> fetchUser()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopGroupsListener?.invoke() // Stop listening when ViewModel is destroyed
     }
 }

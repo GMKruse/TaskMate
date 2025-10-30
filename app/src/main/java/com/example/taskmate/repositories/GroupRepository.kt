@@ -5,8 +5,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 interface IGroupRepository {
     fun createGroup(group: Group, onComplete: (Boolean, String?) -> Unit)
+
+    // Engangs fetch (beholder)
     fun fetchGroupsForUser(email: Email, onResult: (List<Group>) -> Unit)
+
+    //  Real-time listener
+    fun listenToGroupsForUser(email: Email, onResult: (List<Group>) -> Unit): () -> Unit
 }
+
 
 class GroupRepository() : IGroupRepository {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -45,5 +51,30 @@ class GroupRepository() : IGroupRepository {
             .addOnFailureListener {
                 onResult(emptyList())
             }
+    }
+
+    override fun listenToGroupsForUser(email: Email, onResult: (List<Group>) -> Unit): () -> Unit {
+        val listenerRegistration = groupsRef
+            .whereArrayContains("members", email.value)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) {
+                    onResult(emptyList())
+                    return@addSnapshotListener
+                }
+
+                val groups = snapshot.documents.mapNotNull { doc ->
+                    val id = doc.getString("id") ?: return@mapNotNull null
+                    val name = doc.getString("name") ?: return@mapNotNull null
+                    val createdBy = doc.getString("createdBy") ?: return@mapNotNull null
+                    val members = (doc.get("members") as? List<*>)?.mapNotNull { it as? String }?.map { Email(it) } ?: emptyList()
+                    val createdAt = doc.getLong("createdAt") ?: 0L
+
+                    Group(id, name, UserId(createdBy), members, createdAt)
+                }
+
+                onResult(groups)
+            }
+
+        return { listenerRegistration.remove() }
     }
 }
