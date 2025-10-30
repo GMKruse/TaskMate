@@ -45,7 +45,22 @@ fun SpecificTaskScreen(
                     Text("Completed")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onBack) { Text("Back") }
+                Row {
+                    Button(onClick = onBack, modifier = Modifier.weight(1f)) { Text("Back") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel.deleteTask { success ->
+                                if (success) onBack()
+                                // Optionally show a message if failed
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.onError)
+                    }
+                }
             }
         }
     }

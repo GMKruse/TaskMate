@@ -50,4 +50,12 @@ class SpecificTaskViewModel(
             }
         }
     }
+
+    fun deleteTask(onResult: (Boolean) -> Unit) {
+        val currentTask = (viewState.value as? ViewState.Data)?.data ?: return
+        viewModelScope.launch {
+            val success = taskRepository.deleteTask(currentTask.id)
+            onResult(success)
+        }
+    }
 }

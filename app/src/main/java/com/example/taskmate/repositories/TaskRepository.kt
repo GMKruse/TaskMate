@@ -8,6 +8,7 @@ interface ITaskRepository {
     fun fetchTasksForGroup(groupId: String, onResult: (List<Task>) -> Unit)
     suspend fun getTaskById(taskId: String): Task?
     suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): Boolean
+    suspend fun deleteTask(taskId: String): Boolean // Add this
 }
 
 class TaskRepository : ITaskRepository {
@@ -82,6 +83,15 @@ class TaskRepository : ITaskRepository {
     override suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): Boolean {
         return try {
             tasksRef.document(taskId).update("isCompleted", isCompleted).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun deleteTask(taskId: String): Boolean {
+        return try {
+            tasksRef.document(taskId).delete().await()
             true
         } catch (e: Exception) {
             false
