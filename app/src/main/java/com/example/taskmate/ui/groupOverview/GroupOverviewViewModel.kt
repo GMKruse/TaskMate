@@ -46,7 +46,7 @@ class GroupOverviewViewModel(
                 _viewState.update { it.copy(quote = DataState.Data(quote)) }
             },
             onError = { error ->
-                _viewState.update { it.copy(quote = DataState.Data("Just do it!")) }
+                _viewState.update { it.copy(quote = DataState.Data("Errors are stepping stones to truth! - Sigmund Freud")) }
             }
         )
     }
