@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.taskmate.repositories.ITaskRepository
 
 class SpecificTaskViewModel(
     private val taskId: String,
@@ -33,6 +34,19 @@ class SpecificTaskViewModel(
                 }
             } catch (e: Exception) {
                 _viewState.update { ViewState.Error("Failed to load task") }
+            }
+        }
+    }
+
+    fun setTaskCompleted(completed: Boolean) {
+        val currentTask = (viewState.value as? ViewState.Data)?.data ?: return
+        viewModelScope.launch {
+            val success = taskRepository.updateTaskCompletion(currentTask.id, completed)
+            if (success) {
+                // Update local state
+                _viewState.update { ViewState.Data(currentTask.copy(isCompleted = completed)) }
+            } else {
+                _viewState.update { ViewState.Error("Failed to update task") }
             }
         }
     }

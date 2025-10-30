@@ -17,12 +17,19 @@ import com.example.taskmate.repositories.UserRepository
 import com.example.taskmate.ui.groupOverview.GroupOverviewScreen
 import com.example.taskmate.ui.createGroup.CreateGroupScreen
 import com.example.taskmate.ui.taskOverview.TaskOverview // <- import for your TaskOverview
+import com.example.taskmate.repositories.TaskRepository
+import com.example.taskmate.repositories.ITaskRepository
+import com.example.taskmate.ui.specificTask.SpecificTaskScreen
+import com.example.taskmate.ui.specificTask.SpecificTaskViewModel
 
 sealed class AppRoute(val route: String) {
     object GroupOverview : AppRoute("group_overview")
     object CreateGroup : AppRoute("create_group")
     object TaskOverview : AppRoute("task_overview/{groupId}") {
         fun createRoute(groupId: String) = "task_overview/$groupId"
+    }
+    object SpecificTask : AppRoute("task_details/{taskId}") {
+        fun createRoute(taskId: String) = "task_details/$taskId"
     }
 }
 
@@ -109,7 +116,7 @@ fun AppNavHost(userManager: IUserManager) {
                     )
                 }
 
-                // Task overview (moved outside CreateGroup composable)
+                // Task overview
                 composable(AppRoute.TaskOverview.route) { backStackEntry ->
                     val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
 
@@ -125,9 +132,36 @@ fun AppNavHost(userManager: IUserManager) {
                     TaskOverview(
                         groupId = groupId,
                         onTaskClick = { task ->
-                            // Navigation to task details kommer senere, fx:
-                            // navController.navigate("task_details/${task.id}")
+                            navController.navigate(AppRoute.SpecificTask.createRoute(task.id))
                         }
+                    )
+                }
+
+                // Specific task details
+                composable(AppRoute.SpecificTask.route) { backStackEntry ->
+                    val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+                    val taskRepository: ITaskRepository = TaskRepository()
+                    val viewModel: SpecificTaskViewModel = viewModel(
+                        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                @Suppress("UNCHECKED_CAST")
+                                return SpecificTaskViewModel(taskId, taskRepository) as T
+                            }
+                        }
+                    )
+
+                    // Set TopBar for this screen
+                    LaunchedEffect(Unit) {
+                        topBarConfig = TopBarConfig(
+                            title = "Task Details",
+                            showNavigationIcon = true,
+                            onNavigationClick = { navController.popBackStack() }
+                        )
+                    }
+
+                    SpecificTaskScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
                     )
                 }
             }

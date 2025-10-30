@@ -31,12 +31,17 @@ fun SpecificTaskScreen(
             }
             is ViewState.Data -> {
                 val task = s.data
-                Text(text = task.title, style = MaterialTheme.typography.headlineMedium)
+                Text(text = task.name, style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = task.description)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = task.isCompleted, onCheckedChange = null)
+                    Checkbox(
+                        checked = task.isCompleted,
+                        onCheckedChange = { checked ->
+                            viewModel.setTaskCompleted(checked)
+                        }
+                    )
                     Text("Completed")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
