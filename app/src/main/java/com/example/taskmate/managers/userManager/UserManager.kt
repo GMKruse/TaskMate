@@ -1,6 +1,7 @@
 package com.example.taskmate.managers.userManager
 
 import com.example.taskmate.models.Email
+import com.example.taskmate.models.User
 import com.example.taskmate.repositories.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,33 +48,34 @@ class UserManager private constructor() : IUserManager {
         }
     }
 
-    override suspend fun register(name: String, email: String, password: String) {
-        _state.update { UserManagerState.Loading }
-
-        try {
+    override suspend fun register(name: String, email: String, password: String): String? {
+        return try {
             val result = withContext(Dispatchers.IO) {
                 userRepository.register(name, Email(email), password)
             }
 
             if (result.isSuccess) {
-                val user = withContext(Dispatchers.IO) {
-                    userRepository.getCurrentUser()
-                }
-                if (user != null) {
-                    _state.update { UserManagerState.LoggedIn(user) }
-                } else {
-                    _state.update { UserManagerState.LoggedOut(error = "Failed to fetch user data") }
-                }
+                null // Success, no error
             } else {
-                _state.update { UserManagerState.LoggedOut(error = result.exceptionOrNull()?.message ?: "Registration failed") }
+                result.exceptionOrNull()?.message ?: "Registration failed"
             }
         } catch (e: Exception) {
-            _state.update { UserManagerState.LoggedOut(error = e.message ?: "An unexpected error occurred") }
+            e.message ?: "An unexpected error occurred"
         }
     }
 
     override fun logout() {
         userRepository.logout()
         _state.update { UserManagerState.LoggedOut() }
+    }
+
+    override fun getCurrentUserOrLogOut(): User {
+        val currentState = _state.value
+        return if (currentState is UserManagerState.LoggedIn) {
+            currentState.user
+        } else {
+            logout()
+            throw IllegalStateException("No user is currently logged in")
+        }
     }
 }
