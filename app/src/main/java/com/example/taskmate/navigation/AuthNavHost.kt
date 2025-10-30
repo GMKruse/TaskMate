@@ -7,7 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.taskmate.managers.userManager.IUserManager
 import com.example.taskmate.managers.userManager.UserManager
-import com.example.taskmate.ui.LoginScreen
+import com.example.taskmate.ui.LoginScreen.LoginScreen
+import com.example.taskmate.ui.LoginScreen.LoginScreenViewModel
 import com.example.taskmate.ui.registerScreen.RegisterScreen
 import com.example.taskmate.ui.registerScreen.RegisterScreenViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -31,13 +32,19 @@ fun AuthNavHost(
         startDestination = AuthRoute.Login.route
     ) {
         composable(AuthRoute.Login.route) {
-            LoginScreen(
-                error = error,
-                onLogin = { email, password ->
-                    scope.launch {
-                        userManager.login(email, password)
+            val loginViewModel: LoginScreenViewModel = viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        val userManager = UserManager.getInstance()
+
+                        @Suppress("UNCHECKED_CAST")
+                        return LoginScreenViewModel(userManager) as T
                     }
-                },
+                }
+            )
+
+            LoginScreen(
+                viewModel = loginViewModel,
                 onNavigateToRegister = {
                     navController.navigate(AuthRoute.Register.route)
                 }
