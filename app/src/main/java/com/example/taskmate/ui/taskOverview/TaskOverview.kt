@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.taskmate.models.Task
@@ -20,60 +23,129 @@ fun TaskOverview(
     onTaskClick: (Task) -> Unit = {}
 ) {
     var tasks by remember { mutableStateOf<List<Task>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
+    var isDialogOpen by remember { mutableStateOf(false) }
+    var creating by remember { mutableStateOf(false) }
 
-    // Hent tasks ved første composition eller når groupId ændres
-    LaunchedEffect(groupId) {
-        loading = true
-        taskRepository.fetchTasksForGroup(groupId) { fetched ->
-            tasks = fetched
-            loading = false
+    // Real-time listener: subscribe/unsubscribe via DisposableEffect
+    DisposableEffect(groupId) {
+        val unsubscribe = taskRepository.listenToTasksForGroup(groupId) { updated ->
+            tasks = updated
+        }
+        onDispose {
+            unsubscribe()
         }
     }
 
-    Column(modifier = Modifier.padding(12.dp)) {
-
-        // Add Test Task button
-        Button(onClick = {
-            val newTask = Task(
-                id = "", // Firestore genererer ID
-                name = "Test Task ${tasks.size + 1}",
-                description = "Auto-generated test",
-                isCompleted = false,
-                groupId = groupId
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { isDialogOpen = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Add task")
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(12.dp)
+        ) {
+            Text(
+                text = "Tasks for group",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            taskRepository.createTask(newTask) { success, _ ->
-                if (success) {
-                    taskRepository.fetchTasksForGroup(groupId) { updated ->
-                        tasks = updated
+            if (tasks.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No tasks yet. Use the + button to add one.")
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(tasks) { task ->
+                        TaskListItem(
+                            task = task,
+                            onClick = { onTaskClick(task) }
+                        )
+                        Divider()
                     }
                 }
             }
-        }) {
-            Text("Add Test Task")
         }
 
-        Text(
-            text = "Tasks for group",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
-        )
+        // Dialog: Create Task (Dialog mode C chosen). Auto-close on success (Option A).
+        if (isDialogOpen) {
+            var name by remember { mutableStateOf("") }
+            var description by remember { mutableStateOf("") }
 
-        if (loading) {
-            Text(text = "Loading...", modifier = Modifier.padding(8.dp))
-        }
-
-        LazyColumn(
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            items(tasks) { task ->
-                TaskListItem(
-                    task = task,
-                    onClick = { onTaskClick(task) }
-                )
-                Divider() // Changed to Divider (not deprecated)
-            }
+            AlertDialog(
+                onDismissRequest = {
+                    if (!creating) {
+                        isDialogOpen = false
+                    }
+                },
+                title = { Text("Create Task") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Task name") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Description") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (name.isBlank()) return@TextButton
+                            creating = true
+                            val newTask = Task(
+                                id = "",
+                                name = name.trim(),
+                                description = description.trim(),
+                                isCompleted = false,
+                                groupId = groupId
+                            )
+                            taskRepository.createTask(newTask) { success, _ ->
+                                creating = false
+                                if (success) {
+                                    // Auto-close dialog (Option A)
+                                    isDialogOpen = false
+                                    // input field reset handled next time dialog opens via remember
+                                } else {
+                                    // optionally show error (snackbar, toast) — omitted for brevity
+                                }
+                            }
+                        },
+                        enabled = !creating
+                    ) {
+                        Text(if (creating) "Creating..." else "Create")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            if (!creating) isDialogOpen = false
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
@@ -90,16 +162,26 @@ fun TaskListItem(
             .clickable { onClick() },
         shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = task.name, style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = task.description,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = task.name, style = MaterialTheme.typography.titleSmall)
+                if (task.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = task.description,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
             Checkbox(
                 checked = task.isCompleted,
-                onCheckedChange = null
+                onCheckedChange = null // implement status update senere
             )
         }
     }
