@@ -12,6 +12,7 @@ sealed class UserManagerState {
 interface IUserManager {
     val state: StateFlow<UserManagerState>
     suspend fun login(email: String, password: String)
-    suspend fun register(name: String, email: String, password: String)
+    suspend fun register(name: String, email: String, password: String): String?
     fun logout()
+    fun getCurrentUserOrLogOut(): User
 }

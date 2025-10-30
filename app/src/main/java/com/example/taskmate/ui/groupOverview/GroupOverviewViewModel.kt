@@ -2,64 +2,61 @@ package com.example.taskmate.ui.groupOverview
 
 import IGroupRepository
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.example.taskmate.managers.userManager.IUserManager
+import com.example.taskmate.models.DataState
 import com.example.taskmate.models.Group
 import com.example.taskmate.models.User
-import com.example.taskmate.models.ViewState
-import com.example.taskmate.repositories.IUserRepository
+import com.example.taskmate.services.IQuoteService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 class GroupOverviewViewModel(
-    private val userRepository: IUserRepository,
-    private val groupRepository: IGroupRepository
+    private val userManager: IUserManager,
+    private val groupRepository: IGroupRepository,
+    private val quoteService: IQuoteService
 ) : ViewModel() {
 
-    data class DataState(
+    data class ViewState(
         val user: User,
-        val groups: List<Group>
+        val groups: DataState<List<Group>, Nothing?>,
+        val quote: DataState<String, Nothing?>
     )
 
-    private val _viewState = MutableStateFlow<ViewState<DataState, String>>(ViewState.Loading)
-    val viewState: StateFlow<ViewState<DataState, String>> = _viewState
+    private val _viewState = MutableStateFlow(
+        ViewState(
+            user = userManager.getCurrentUserOrLogOut(),
+            groups = DataState.Loading,
+            quote = DataState.Loading
+        )
+    )
+    val viewState: StateFlow<ViewState> = _viewState
 
     init {
-        fetchUser()
-    }
-
-    private fun fetchUser() {
-        viewModelScope.launch {
-            _viewState.update { ViewState.Loading }
-            try {
-                val user = userRepository.getCurrentUser()
-                if (user != null) {
-                    // fetch groups and emit Success once we have them
-                    fetchGroups(user)
-                } else {
-                    _viewState.update { ViewState.Error("No user logged in") }
-                }
-            } catch (_: Exception) {
-                _viewState.update { ViewState.Error("Failed to load user") }
-            }
-        }
+        fetchGroups(_viewState.value.user)
+        fetchQuote()
     }
 
     private fun fetchGroups(user: User) {
-        _viewState.update { ViewState.Loading }
+        _viewState.update { it.copy(groups = DataState.Loading) }
         groupRepository.fetchGroupsForUser(user.email) { groups ->
-            _viewState.update { ViewState.Data(DataState(user = user, groups = groups)) }
+            _viewState.update { it.copy(groups = DataState.Data(groups)) }
         }
     }
 
-    fun refreshGroups() {
-        when (val s = _viewState.value) {
-            is ViewState.Data -> {
-                val data = s.data
-                fetchGroups(data.user)
+    private fun fetchQuote() {
+        _viewState.update { it.copy(quote = DataState.Loading) }
+        quoteService.fetchTodayQuote(
+            onSuccess = { quote ->
+                _viewState.update { it.copy(quote = DataState.Data(quote)) }
+            },
+            onError = { error ->
+                _viewState.update { it.copy(quote = DataState.Data("Just do it!")) }
             }
-            else -> fetchUser()
-        }
+        )
+    }
+
+    fun refreshGroups() {
+        fetchGroups(_viewState.value.user)
     }
 }
