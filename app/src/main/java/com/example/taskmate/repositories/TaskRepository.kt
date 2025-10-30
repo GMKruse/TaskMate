@@ -104,46 +104,6 @@ class TaskRepository : ITaskRepository {
         }
     }
 
-    override suspend fun getTaskById(taskId: String): Task? {
-        return try {
-            val doc = tasksRef.document(taskId).get().await()
-            if (doc.exists()) {
-                val id = doc.getString("id") ?: doc.id
-                val name = doc.getString("name") ?: ""
-                val description = doc.getString("description") ?: ""
-                val isCompleted = doc.getBoolean("isCompleted") ?: false
-                val groupId = doc.getString("groupId") ?: ""
-                Task(
-                    id = id,
-                    name = name,
-                    description = description,
-                    isCompleted = isCompleted,
-                    groupId = groupId
-                )
-            } else null
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    override suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): Boolean {
-        return try {
-            tasksRef.document(taskId).update("isCompleted", isCompleted).await()
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    override suspend fun deleteTask(taskId: String): Boolean {
-        return try {
-            tasksRef.document(taskId).delete().await()
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
     override fun listenToTasksForGroup(groupId: String, onResult: (List<Task>) -> Unit): () -> Unit {
         val listener: ListenerRegistration = tasksRef
             .whereEqualTo("groupId", groupId)

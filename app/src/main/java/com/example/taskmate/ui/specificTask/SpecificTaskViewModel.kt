@@ -2,8 +2,8 @@ package com.example.taskmate.ui.specificTask
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.taskmate.models.DataState
 import com.example.taskmate.models.Task
-import com.example.taskmate.models.ViewState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -15,8 +15,12 @@ class SpecificTaskViewModel(
     private val taskRepository: ITaskRepository // To be implemented by your team
 ) : ViewModel() {
 
-    private val _viewState = MutableStateFlow<ViewState<Task, String>>(ViewState.Loading)
-    val viewState: StateFlow<ViewState<Task, String>> = _viewState
+    data class ViewState(
+        val task: DataState<Task, String> = DataState.Loading
+    )
+
+    private val _viewState = MutableStateFlow<ViewState>(ViewState())
+    val viewState: StateFlow<ViewState> = _viewState
 
     init {
         fetchTask()
@@ -24,36 +28,42 @@ class SpecificTaskViewModel(
 
     private fun fetchTask() {
         viewModelScope.launch {
-            _viewState.update { ViewState.Loading }
+            _viewState.update { it.copy(task = DataState.Loading) }
             try {
                 val task = taskRepository.getTaskById(taskId) // suspend fun
                 if (task != null) {
-                    _viewState.update { ViewState.Data(task) }
+                    _viewState.update { it.copy(task = DataState.Data(task)) }
                 } else {
-                    _viewState.update { ViewState.Error("Task not found") }
+                    _viewState.update { it.copy(task = DataState.Error("Task not found")) }
                 }
             } catch (e: Exception) {
-                _viewState.update { ViewState.Error("Failed to load task") }
+                _viewState.update { it.copy(task = DataState.Error(e.message ?: "Unknown error")) }
             }
         }
     }
 
     fun setTaskCompleted(completed: Boolean) {
-        val currentTask = (viewState.value as? ViewState.Data)?.data ?: return
         viewModelScope.launch {
+            val currentTask = when (val taskState = _viewState.value.task) {
+                is DataState.Data -> taskState.data
+                else -> return@launch
+            }
             val success = taskRepository.updateTaskCompletion(currentTask.id, completed)
             if (success) {
                 // Update local state
-                _viewState.update { ViewState.Data(currentTask.copy(isCompleted = completed)) }
+                _viewState.update { it.copy(task = DataState.Data(currentTask.copy(isCompleted = completed))) }
             } else {
-                _viewState.update { ViewState.Error("Failed to update task") }
+                _viewState.update { it.copy(task = DataState.Error("Failed to update task")) }
             }
         }
     }
 
     fun deleteTask(onResult: (Boolean) -> Unit) {
-        val currentTask = (viewState.value as? ViewState.Data)?.data ?: return
         viewModelScope.launch {
+            val currentTask = when (val taskState = _viewState.value.task) {
+                is DataState.Data -> taskState.data
+                else -> return@launch
+            }
             val success = taskRepository.deleteTask(currentTask.id)
             onResult(success)
         }

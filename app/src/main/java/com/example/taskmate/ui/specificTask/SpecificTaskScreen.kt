@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.taskmate.models.ViewState
+import com.example.taskmate.models.DataState
 
 @Composable
 fun SpecificTaskScreen(
@@ -21,16 +21,16 @@ fun SpecificTaskScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        when (val s = viewState) {
-            is ViewState.Loading -> {
+        when (val taskState = viewState.task) {
+            is DataState.Loading -> {
                 CircularProgressIndicator()
             }
-            is ViewState.Error -> {
-                Text(text = s.error, color = MaterialTheme.colorScheme.error)
+            is DataState.Error -> {
+                Text(text = taskState.error, color = MaterialTheme.colorScheme.error)
                 Button(onClick = onBack) { Text("Back") }
             }
-            is ViewState.Data -> {
-                val task = s.data
+            is DataState.Data -> {
+                val task = taskState.data
                 Text(text = task.name, style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = task.description)
