@@ -18,7 +18,8 @@ class RegisterScreenViewModel(
         val email: String = "",
         val password: String = "",
         val errorMessage: String? = null,
-        val isRegistering: Boolean = false
+        val isRegistering: Boolean = false,
+        val userRegistered: String? = null
     )
 
     private val _viewState = MutableStateFlow(ViewState())
@@ -40,7 +41,11 @@ class RegisterScreenViewModel(
         _viewState.update { it.copy(errorMessage = null) }
     }
 
-    fun register(onResult: (Boolean) -> Unit) {
+    fun dismissUserRegistered() {
+        _viewState.update { it.copy(userRegistered = null) }
+    }
+
+    fun register() {
         // Prevent multiple simultaneous registration attempts
         if (_viewState.value.isRegistering) return
 
@@ -50,22 +55,18 @@ class RegisterScreenViewModel(
         when {
             currentState.email.isBlank() -> {
                 _viewState.update { it.copy(errorMessage = "Email is required") }
-                onResult(false)
                 return
             }
             !isValidEmail(currentState.email) -> {
                 _viewState.update { it.copy(errorMessage = "Invalid email format") }
-                onResult(false)
                 return
             }
             currentState.password.isBlank() -> {
                 _viewState.update { it.copy(errorMessage = "Password is required") }
-                onResult(false)
                 return
             }
             !isValidPassword(currentState.password) -> {
                 _viewState.update { it.copy(errorMessage = "Password must be at least 6 characters") }
-                onResult(false)
                 return
             }
         }
@@ -80,17 +81,23 @@ class RegisterScreenViewModel(
                 password = currentState.password
             )
 
-            if (errorMessage == null) {
-                // Success
-                onResult(true)
-            } else {
+            if (errorMessage != null) {
                 // Failure
                 _viewState.update { it.copy(
                     errorMessage = errorMessage,
                     isRegistering = false
                 ) }
-                onResult(false)
+            } else {
+                // Success
+                _viewState.update { it.copy(
+                    name = "",
+                    email = "",
+                    password = "",
+                    userRegistered = currentState.email,
+                    isRegistering = false
+                ) }
             }
+
         }
     }
 

@@ -69,12 +69,6 @@ fun AuthNavHost(
                     navController.navigate(AuthRoute.Login.route) {
                         popUpTo(AuthRoute.Login.route) { inclusive = true }
                     }
-                },
-                onRegisterSuccess = {
-                    // After successful registration, navigate back to login
-                    navController.navigate(AuthRoute.Login.route) {
-                        popUpTo(AuthRoute.Login.route) { inclusive = true }
-                    }
                 }
             )
         }

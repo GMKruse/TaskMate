@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun RegisterScreen(
     viewModel: RegisterScreenViewModel,
-    onNavigateToLogin: () -> Unit,
-    onRegisterSuccess: () -> Unit
+    onNavigateToLogin: () -> Unit
 ) {
     val viewState by viewModel.viewState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -89,9 +88,7 @@ fun RegisterScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     if (!viewState.isRegistering) {
-                        viewModel.register { success ->
-                            if (success) onRegisterSuccess()
-                        }
+                        viewModel.register()
                         focusManager.clearFocus()
                     }
                 }
@@ -102,9 +99,7 @@ fun RegisterScreen(
 
         Button(
             onClick = {
-                viewModel.register { success ->
-                    if (success) onRegisterSuccess()
-                }
+                viewModel.register()
                 focusManager.clearFocus()
             },
             modifier = Modifier.fillMaxWidth(),
@@ -151,6 +146,31 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = { viewModel.dismissError() }) {
                         Text("Dismiss", color = MaterialTheme.colorScheme.onError)
+                    }
+                }
+            }
+        }
+
+        if (viewState.userRegistered != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                color = Color(0xFF4CAF50), // Green color for success
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Successfully registered user: ${viewState.userRegistered!!}",
+                        color = Color.White,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { viewModel.dismissUserRegistered() }) {
+                        Text("Dismiss", color = Color.White)
                     }
                 }
             }

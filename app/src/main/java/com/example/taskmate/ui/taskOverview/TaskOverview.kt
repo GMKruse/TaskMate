@@ -26,7 +26,6 @@ fun TaskOverview(
     var isDialogOpen by remember { mutableStateOf(false) }
     var creating by remember { mutableStateOf(false) }
 
-    // Real-time listener: subscribe/unsubscribe via DisposableEffect
     DisposableEffect(groupId) {
         val unsubscribe = taskRepository.listenToTasksForGroup(groupId) { updated ->
             tasks = updated
