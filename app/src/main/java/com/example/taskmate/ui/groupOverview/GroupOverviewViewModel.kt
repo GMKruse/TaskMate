@@ -32,16 +32,11 @@ class GroupOverviewViewModel(
     )
     val viewState: StateFlow<ViewState> = _viewState
 
-    init {
-        fetchGroups(_viewState.value.user)
-        fetchQuote()
-    }
+    private var stopGroupsListener: (() -> Unit)? = null
 
-    private fun fetchGroups(user: User) {
-        _viewState.update { it.copy(groups = DataState.Loading) }
-        groupRepository.fetchGroupsForUser(user.email) { groups ->
-            _viewState.update { it.copy(groups = DataState.Data(groups)) }
-        }
+    init {
+        startGroupsListener(_viewState.value.user)
+        fetchQuote()
     }
 
     private fun fetchQuote() {
@@ -56,7 +51,24 @@ class GroupOverviewViewModel(
         )
     }
 
+    private fun startGroupsListener(user: User) {
+        // Stop existing listener if any
+        stopGroupsListener?.invoke()
+
+        _viewState.update { it.copy(groups = DataState.Loading) }
+
+        // Start new real-time listener
+        stopGroupsListener = groupRepository.listenToGroupsForUser(user.email) { groups ->
+            _viewState.update { it.copy(groups = DataState.Data(groups)) }
+        }
+    }
+
     fun refreshGroups() {
-        fetchGroups(_viewState.value.user)
+        startGroupsListener(_viewState.value.user)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopGroupsListener?.invoke() // Stop listening when ViewModel is destroyed
     }
 }
