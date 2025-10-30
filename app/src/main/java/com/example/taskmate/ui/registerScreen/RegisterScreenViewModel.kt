@@ -46,7 +46,6 @@ class RegisterScreenViewModel(
     }
 
     fun register() {
-        // Prevent multiple simultaneous registration attempts
         if (_viewState.value.isRegistering) return
 
         val currentState = _viewState.value
@@ -71,7 +70,6 @@ class RegisterScreenViewModel(
             }
         }
 
-        // Set registering flag to disable UI
         _viewState.update { it.copy(isRegistering = true, errorMessage = null) }
 
         viewModelScope.launch {
@@ -82,13 +80,11 @@ class RegisterScreenViewModel(
             )
 
             if (errorMessage != null) {
-                // Failure
                 _viewState.update { it.copy(
                     errorMessage = errorMessage,
                     isRegistering = false
                 ) }
             } else {
-                // Success
                 _viewState.update { it.copy(
                     name = "",
                     email = "",

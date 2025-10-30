@@ -136,7 +136,6 @@ class TaskRepository : ITaskRepository {
                 onResult(tasks)
             }
 
-        // Returner unsubscribe-funktion
         return { listener.remove() }
     }
 }

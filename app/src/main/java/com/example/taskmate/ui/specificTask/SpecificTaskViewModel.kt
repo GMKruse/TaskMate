@@ -12,7 +12,7 @@ import com.example.taskmate.repositories.ITaskRepository
 
 class SpecificTaskViewModel(
     private val taskId: String,
-    private val taskRepository: ITaskRepository // To be implemented by your team
+    private val taskRepository: ITaskRepository
 ) : ViewModel() {
 
     data class ViewState(
@@ -30,7 +30,7 @@ class SpecificTaskViewModel(
         viewModelScope.launch {
             _viewState.update { it.copy(task = DataState.Loading) }
             try {
-                val task = taskRepository.getTaskById(taskId) // suspend fun
+                val task = taskRepository.getTaskById(taskId)
                 if (task != null) {
                     _viewState.update { it.copy(task = DataState.Data(task)) }
                 } else {
@@ -50,7 +50,6 @@ class SpecificTaskViewModel(
             }
             val success = taskRepository.updateTaskCompletion(currentTask.id, completed)
             if (success) {
-                // Update local state
                 _viewState.update { it.copy(task = DataState.Data(currentTask.copy(isCompleted = completed))) }
             } else {
                 _viewState.update { it.copy(task = DataState.Error("Failed to update task")) }

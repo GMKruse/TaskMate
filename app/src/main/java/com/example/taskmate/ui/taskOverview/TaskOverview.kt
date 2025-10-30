@@ -77,7 +77,6 @@ fun TaskOverview(
             }
         }
 
-        // Dialog: Create Task (Dialog mode C chosen). Auto-close on success (Option A).
         if (isDialogOpen) {
             var name by remember { mutableStateOf("") }
             var description by remember { mutableStateOf("") }
@@ -122,11 +121,7 @@ fun TaskOverview(
                             taskRepository.createTask(newTask) { success, _ ->
                                 creating = false
                                 if (success) {
-                                    // Auto-close dialog (Option A)
                                     isDialogOpen = false
-                                    // input field reset handled next time dialog opens via remember
-                                } else {
-                                    // optionally show error (snackbar, toast) — omitted for brevity
                                 }
                             }
                         },
@@ -180,7 +175,7 @@ fun TaskListItem(
 
             Checkbox(
                 checked = task.isCompleted,
-                onCheckedChange = null // implement status update senere
+                onCheckedChange = null
             )
         }
     }

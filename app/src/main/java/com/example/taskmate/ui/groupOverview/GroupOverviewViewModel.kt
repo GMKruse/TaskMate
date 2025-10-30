@@ -52,12 +52,10 @@ class GroupOverviewViewModel(
     }
 
     private fun startGroupsListener(user: User) {
-        // Stop existing listener if any
         stopGroupsListener?.invoke()
 
         _viewState.update { it.copy(groups = DataState.Loading) }
 
-        // Start new real-time listener
         stopGroupsListener = groupRepository.listenToGroupsForUser(user.email) { groups ->
             _viewState.update { it.copy(groups = DataState.Data(groups)) }
         }
@@ -69,6 +67,6 @@ class GroupOverviewViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        stopGroupsListener?.invoke() // Stop listening when ViewModel is destroyed
+        stopGroupsListener?.invoke()
     }
 }

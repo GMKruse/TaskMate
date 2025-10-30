@@ -154,7 +154,6 @@ fun CreateGroupScreen(
             }
         }
 
-        // Bottom button section
         Box(
             modifier = Modifier
                 .fillMaxWidth()

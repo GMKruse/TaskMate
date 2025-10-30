@@ -154,7 +154,7 @@ fun RegisterScreen(
         if (viewState.userRegistered != null) {
             Spacer(modifier = Modifier.height(16.dp))
             Surface(
-                color = Color(0xFF4CAF50), // Green color for success
+                color = Color(0xFF4CAF50),
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             ) {

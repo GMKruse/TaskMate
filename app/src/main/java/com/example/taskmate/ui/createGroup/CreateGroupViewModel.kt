@@ -47,7 +47,6 @@ class CreateGroupViewModel(
         _viewState.update { it.copy(emailInput = input, emailError = null) }
     }
 
-    // Now requires the current user's email passed in from the view (non-nullable)
     fun addEmail(currentUserEmail: Email) {
         val emailStr = _viewState.value.emailInput.trim()
         if (emailStr.isBlank()) return
@@ -78,20 +77,16 @@ class CreateGroupViewModel(
         _viewState.update { it.copy(emailError = null) }
     }
 
-    // createGroup now requires the current user's email to be passed in from the view
     fun createGroup(currentUserEmail: Email, onResult: (Boolean) -> Unit) {
-        // Prevent creating while an operation is already in progress
         if (_viewState.value.creatingGroup) return
 
         val currentState = _viewState.value
 
-        // Prevent mismatch: ensure the passed email matches the loaded user
         if (currentState.currentUser.email != currentUserEmail) {
             onResult(false)
             return
         }
 
-        // set creating flag so UI can disable inputs and show a button spinner
         _viewState.update { it.copy(creatingGroup = true) }
 
         val filteredMembers = _viewState.value.memberEmails.filter { it != currentUserEmail }

@@ -59,12 +59,10 @@ class LoginScreenViewModel(
     }
 
     fun login() {
-        // Prevent multiple simultaneous login attempts
         if (_viewState.value.isLoggingIn) return
 
         val currentState = _viewState.value
 
-        // Validate inputs
         when {
             currentState.email.isBlank() -> {
                 _viewState.update { it.copy(errorMessage = "Email is required") }
@@ -85,8 +83,6 @@ class LoginScreenViewModel(
                 email = currentState.email,
                 password = currentState.password
             )
-            // Note: isLoggingIn state and error handling is now done in the init block
-            // by observing userManager.state
         }
     }
 

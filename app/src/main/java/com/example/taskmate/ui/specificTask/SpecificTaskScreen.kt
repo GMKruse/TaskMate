@@ -52,7 +52,6 @@ fun SpecificTaskScreen(
                         onClick = {
                             viewModel.deleteTask { success ->
                                 if (success) onBack()
-                                // Optionally show a message if failed
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),

@@ -56,7 +56,6 @@ fun AppNavHost(userManager: IUserManager) {
                 navController = navController,
                 startDestination = AppRoute.GroupOverview.route
             ) {
-                // Group overview
                 composable(AppRoute.GroupOverview.route) {
                     val viewModel: GroupOverviewViewModel = viewModel(
                         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -71,7 +70,7 @@ fun AppNavHost(userManager: IUserManager) {
                         }
                     )
 
-                    // Set TopBar configuration for this screen
+
                     LaunchedEffect(Unit) {
                         topBarConfig = TopBarConfig(
                             title = "Groups",
@@ -96,7 +95,6 @@ fun AppNavHost(userManager: IUserManager) {
                     )
                 }
 
-                // Create group
                 composable(AppRoute.CreateGroup.route) {
                     val viewModel: CreateGroupViewModel = viewModel(
                         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -110,7 +108,6 @@ fun AppNavHost(userManager: IUserManager) {
                         }
                     )
 
-                    // Set TopBar configuration for this screen
                     LaunchedEffect(Unit) {
                         topBarConfig = TopBarConfig(
                             title = "New group",
@@ -127,11 +124,10 @@ fun AppNavHost(userManager: IUserManager) {
                     )
                 }
 
-                // Task overview
+
                 composable(AppRoute.TaskOverview.route) { backStackEntry ->
                     val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
 
-                    // Set TopBar for this screen
                     LaunchedEffect(Unit) {
                         topBarConfig = TopBarConfig(
                             title = "Group Tasks",
@@ -148,7 +144,6 @@ fun AppNavHost(userManager: IUserManager) {
                     )
                 }
 
-                // Specific task details
                 composable(AppRoute.SpecificTask.route) { backStackEntry ->
                     val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
                     val taskRepository: ITaskRepository = TaskRepository()
@@ -161,7 +156,6 @@ fun AppNavHost(userManager: IUserManager) {
                         }
                     )
 
-                    // Set TopBar for this screen
                     LaunchedEffect(Unit) {
                         topBarConfig = TopBarConfig(
                             title = "Task Details",
