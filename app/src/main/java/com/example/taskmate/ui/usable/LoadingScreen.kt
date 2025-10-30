@@ -1,4 +1,4 @@
-package com.example.taskmate.ui
+package com.example.taskmate.ui.usable
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

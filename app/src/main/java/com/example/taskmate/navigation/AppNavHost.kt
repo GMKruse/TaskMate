@@ -13,7 +13,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.taskmate.ui.createGroup.CreateGroupViewModel
 import com.example.taskmate.ui.groupOverview.GroupOverviewViewModel
 import com.example.taskmate.managers.userManager.IUserManager
+import com.example.taskmate.managers.userManager.UserManager
 import com.example.taskmate.repositories.UserRepository
+import com.example.taskmate.services.QuoteService
 import com.example.taskmate.ui.groupOverview.GroupOverviewScreen
 import com.example.taskmate.ui.createGroup.CreateGroupScreen
 import com.example.taskmate.ui.taskOverview.TaskOverview // <- import for your TaskOverview
@@ -59,10 +61,12 @@ fun AppNavHost(userManager: IUserManager) {
                     val viewModel: GroupOverviewViewModel = viewModel(
                         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                val userRepository = UserRepository()
+                                val userManager = UserManager.getInstance()
                                 val groupRepository: IGroupRepository = GroupRepository()
+                                val quoteService = QuoteService()
+
                                 @Suppress("UNCHECKED_CAST")
-                                return GroupOverviewViewModel(userRepository, groupRepository) as T
+                                return GroupOverviewViewModel(userManager, groupRepository, quoteService) as T
                             }
                         }
                     )
@@ -94,7 +98,17 @@ fun AppNavHost(userManager: IUserManager) {
 
                 // Create group
                 composable(AppRoute.CreateGroup.route) {
-                    val viewModel: CreateGroupViewModel = viewModel()
+                    val viewModel: CreateGroupViewModel = viewModel(
+                        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                val userManager = UserManager.getInstance()
+                                val groupRepository: IGroupRepository = GroupRepository()
+
+                                @Suppress("UNCHECKED_CAST")
+                                return CreateGroupViewModel(userManager, groupRepository) as T
+                            }
+                        }
+                    )
 
                     // Set TopBar configuration for this screen
                     LaunchedEffect(Unit) {
@@ -107,9 +121,6 @@ fun AppNavHost(userManager: IUserManager) {
 
                     CreateGroupScreen(
                         viewModel = viewModel,
-                        onBack = {
-                            navController.popBackStack()
-                        },
                         onGroupCreated = {
                             navController.popBackStack()
                         }

@@ -15,9 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.taskmate.ui.groupOverview.GroupOverviewViewModel
 import com.example.taskmate.models.Group
-import com.example.taskmate.models.ViewState
+import com.example.taskmate.models.DataState
 
 @Composable
 fun GroupOverviewScreen(
@@ -33,52 +32,47 @@ fun GroupOverviewScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        when (val s = viewState) {
-            is ViewState.Loading -> {
-                // show placeholder greeting and loader
-                GreetingCard("")
+        GreetingCard(viewState.user.name, viewState.quote)
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Your groups",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = onNavigateToCreateGroup) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add group"
+                )
+            }
+        }
+
+        when (val groupsState = viewState.groups) {
+            is DataState.Loading -> {
                 Spacer(modifier = Modifier.height(16.dp))
                 CircularProgressIndicator()
             }
 
-            is ViewState.Error -> {
-                val message = s.error
-                // show an empty greeting and the error message
-                GreetingCard("")
+            is DataState.Error -> {
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
-                    text = message,
+                    text = "Unknown error",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
 
-            is ViewState.Data -> {
-                val data = s.data
+            is DataState.Data -> {
+                val groups = groupsState.data
 
-                GreetingCard(data.user.name)
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 24.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Your groups",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = onNavigateToCreateGroup) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add group"
-                        )
-                    }
-                }
-
-                if (data.groups.isEmpty()) {
+                if (groups.isEmpty()) {
                     Spacer(modifier = Modifier.height(32.dp))
                     Text(
                         text = "No groups yet.",
@@ -86,7 +80,7 @@ fun GroupOverviewScreen(
                     )
                 } else {
                     GroupList(
-                        groups = data.groups,
+                        groups = groups,
                         onGroupClick = onNavigateToGroupDetails
                     )
                 }
@@ -96,7 +90,7 @@ fun GroupOverviewScreen(
 }
 
 @Composable
-fun GreetingCard(userName: String) {
+fun GreetingCard(userName: String, quoteState: DataState<String, Nothing?>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -110,11 +104,29 @@ fun GreetingCard(userName: String) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            Text(
-                text = "Motivational quote of the day: Just do it!",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
+            when (quoteState) {
+                is DataState.Loading -> {
+                    Text(
+                        text = "Loading quote...",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+                is DataState.Data -> {
+                    Text(
+                        text = "Motivational quote of the day: ${quoteState.data}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+                is DataState.Error -> {
+                    Text(
+                        text = "Motivational quote of the day: Just do it!",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
         }
     }
 }
@@ -158,4 +170,3 @@ fun GroupList(
         }
     }
 }
-
